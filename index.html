@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Silo - Arduino</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --gray-light: #f8f9fa;
+            --gray-medium: #e9ecef;
+            --gray-dark: #6c757d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, var(--primary-color) 0%, #1a2530 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .logo h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .logo p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .menu {
+            list-style: none;
+        }
+        
+        .menu li {
+            padding: 15px 20px;
+            border-left: 4px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .menu li:hover {
+            background-color: rgba(255,255,255,0.1);
+            border-left-color: var(--secondary-color);
+        }
+        
+        .menu li.active {
+            background-color: rgba(255,255,255,0.15);
+            border-left-color: var(--secondary-color);
+            font-weight: 500;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--gray-light);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px 0;
+        }
+        
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        
+        .status-bar {
+            display: flex;
+            gap: 30px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .status-item {
+            text-align: center;
+            position: relative;
+        }
+        
+        .status-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            transition: all 0.5s ease;
+        }
+        
+        .status-value.warning {
+            color: var(--warning-color);
+        }
+        
+        .status-label {
+            font-size: 0.9rem;
+            color: var(--gray-dark);
+            font-weight: 500;
+        }
+        
+        /* Dashboard */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray-medium);
+        }
+        
+        .card-title {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        /* Gauges */
+        .gauges {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .gauge-container {
+            height: 200px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .gauge-title {
+            text-align: center;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .gauge-value {
+            position: absolute;
+            top: 65%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            transition: all 0.5s ease;
+        }
+        
+        .gauge-value.warning {
+            color: var(--warning-color);
+        }
+        
+        .gauge-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .control-section {
+            background: var(--gray-light);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .control-title {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .toggle-btn {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            background-color: var(--gray-medium);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .toggle-btn.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px 0;
+        }
+        
+        .control-label {
+            font-weight: 500;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control-icon {
+            font-size: 1.2rem;
+            width: 30px;
+            text-align: center;
+            transition: color 0.3s;
+        }
+        
+        .control-icon.active {
+            color: var(--success-color);
+        }
+        
+        .control-icon.inactive {
+            color: var(--gray-dark);
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--success-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid var(--gray-medium);
+            color: var(--gray-dark);
+            font-size: 0.9rem;
+        }
+        
+        .mode-status {
+            color: var(--success-color);
+            font-weight: 500;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: rgba(39, 174, 96, 0.1);
+            border-radius: 4px;
+            border-left: 4px solid var(--success-color);
+        }
+        
+        .mode-status.manual {
+            color: var(--warning-color);
+            background-color: rgba(243, 156, 18, 0.1);
+            border-left-color: var(--warning-color);
+        }
+        
+        /* Editable Area */
+        .editable-area {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .editable-title {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .editable-content {
+            min-height: 100px;
+            padding: 15px;
+            border: 2px dashed var(--gray-medium);
+            border-radius: 8px;
+            background-color: var(--gray-light);
+            cursor: text;
+        }
+        
+        .editable-content:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            background-color: white;
+        }
+        
+        .edit-hint {
+            color: var(--gray-dark);
+            font-size: 0.9rem;
+            font-style: italic;
+            margin-top: 8px;
+        }
+        
+        /* Product Data Area */
+        .product-data-area {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .product-data-title {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .product-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .product-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .product-input-group label {
+            font-weight: 500;
+            color: var(--dark-color);
+            font-size: 0.9rem;
+        }
+        
+        .product-input {
+            padding: 10px 12px;
+            border: 1px solid var(--gray-medium);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s;
+        }
+        
+        .product-input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+        
+        .range-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .save-product-btn {
+            padding: 10px 20px;
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        
+        .save-product-btn:hover {
+            background-color: #219955;
+        }
+        
+        .saved-products {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gray-medium);
+        }
+        
+        .saved-products-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .product-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .product-chip {
+            background-color: var(--gray-light);
+            padding: 8px 16px 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid var(--gray-medium);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            height: 32px;
+        }
+        
+        .product-chip:hover {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+        
+        .product-chip.active {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+        
+        .remove-product {
+            background: none;
+            border: none;
+            color: var(--gray-dark);
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 0;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+            line-height: 1;
+            margin-left: 4px;
+            position: relative;
+            top: -1px;
+        }
+        
+        .product-chip:hover .remove-product {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .remove-product:hover {
+            background-color: var(--danger-color) !important;
+            color: white !important;
+        }
+        
+        /* Results Page Styles */
+        .time-filter {
+            display: flex;
+            gap: 10px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--gray-medium);
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        
+        .filter-btn.active {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: var(--gray-light);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary-color);
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--gray-dark);
+        }
+        
+        /* Page Management */
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .gauges {
+                grid-template-columns: 1fr;
+            }
+            
+            .product-form {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .time-filter {
+                flex-wrap: wrap;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>Controle de Silo</h1>
+                <p>Monitoramento - Arduino</p>
+            </div>
+            <ul class="menu">
+                <li class="active" data-page="dashboard">📊 Dashboard</li>
+                <li data-page="results">📈 Resultados</li>
+                <li data-page="reports">📋 Relatórios</li>
+                <li data-page="settings">⚙️ Configurações</li>
+            </ul>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Page -->
+            <div class="page active" id="dashboard-page">
+                <div class="header">
+                    <h1>Monitoramento do Silo</h1>
+                    <div class="status-bar">
+                        <div class="status-item">
+                            <div class="status-value" id="temp-value">0°C</div>
+                            <div class="status-label">Temperatura</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-value" id="hum-value">0%</div>
+                            <div class="status-label">Umidade</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Editable Area -->
+                <div class="editable-area">
+                    <div class="editable-title">
+                        <span>Anotações do Operador</span>
+                        <i class="fas fa-edit" style="color: var(--gray-dark);"></i>
+                    </div>
+                    <div class="editable-content" contenteditable="true" id="operator-notes">
+                        Clique aqui para adicionar anotações, observações ou instruções específicas para este silo...
+                    </div>
+                    <div class="edit-hint">
+                        Esta área pode ser editada livremente pelo operador
+                    </div>
+                </div>
+                
+                <!-- Product Data Area -->
+                <div class="product-data-area">
+                    <div class="product-data-title">
+                        <span>Dados do Produto Armazenado</span>
+                    </div>
+                    
+                    <div class="product-form">
+                        <div class="product-input-group">
+                            <label for="product-name">Nome do Produto</label>
+                            <input type="text" id="product-name" class="product-input" placeholder="Digite o nome do produto">
+                        </div>
+                        
+                        <div class="product-input-group">
+                            <label>Faixa Segura - Temperatura (°C)</label>
+                            <div class="range-inputs">
+                                <input type="number" id="temp-min" class="product-input" placeholder="Mín" value="15">
+                                <input type="number" id="temp-max" class="product-input" placeholder="Máx" value="25">
+                            </div>
+                        </div>
+                        
+                        <div class="product-input-group">
+                            <label>Faixa Segura - Umidade (%)</label>
+                            <div class="range-inputs">
+                                <input type="number" id="hum-min" class="product-input" placeholder="Mín" value="11">
+                                <input type="number" id="hum-max" class="product-input" placeholder="Máx" value="15">
+                            </div>
+                        </div>
+                        
+                        <div class="product-input-group">
+                            <label>&nbsp;</label>
+                            <button class="save-product-btn" id="save-product-btn">
+                                <i class="fas fa-save"></i> Salvar Produto
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="saved-products">
+                        <div class="saved-products-title">Produtos Salvos:</div>
+                        <div class="product-list" id="product-list">
+                            <!-- Produtos salvos aparecerão aqui -->
+                        </div>
+                        <div class="edit-hint">
+                            Clique em um produto salvo para carregar suas configurações
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard">
+                    <!-- Gauges Section -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Medições em Tempo Real</div>
+                        </div>
+                        <div class="gauges">
+                            <div class="gauge-item">
+                                <div class="gauge-title">Umidade</div>
+                                <div class="gauge-container">
+                                    <canvas id="hum-gauge" class="gauge-canvas"></canvas>
+                                    <div class="gauge-value" id="hum-gauge-value">0%</div>
+                                </div>
+                            </div>
+                            <div class="gauge-item">
+                                <div class="gauge-title">Temperatura</div>
+                                <div class="gauge-container">
+                                    <canvas id="temp-gauge" class="gauge-canvas"></canvas>
+                                    <div class="gauge-value" id="temp-gauge-value">0°C</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls Section -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Controles do Sistema</div>
+                        </div>
+                        <div class="controls">
+                            <div class="control-section">
+                                <div class="control-title">Modo de Operação</div>
+                                <div class="toggle-group">
+                                    <button class="toggle-btn active" id="auto-btn">Automático</button>
+                                    <button class="toggle-btn" id="manual-btn">Manual</button>
+                                </div>
+                                <div id="mode-status" class="mode-status">
+                                    Modo Automático Ativo - Sistema controlando automaticamente
+                                </div>
+                            </div>
+                            
+                            <div class="control-section">
+                                <div class="control-title">Controles do Sistema</div>
+                                <div class="control-item">
+                                    <span class="control-label">
+                                        <i class="fas fa-fan control-icon inactive" id="ventilation-icon"></i>
+                                        Ventilação
+                                        <span class="control-status" id="ventilation-status"></span>
+                                    </span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="ventilation-switch" disabled>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="control-item">
+                                    <span class="control-label">
+                                        <i class="fas fa-tint control-icon inactive" id="lamp-icon"></i>
+                                        Retirar Umidade
+                                        <span class="control-status" id="lamp-status"></span>
+                                    </span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="lamp-switch" disabled>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Results Page -->
+            <div class="page" id="results-page">
+                <div class="header">
+                    <h1>Resultados - Histórico de Dados</h1>
+                    <div class="time-filter">
+                        <button class="filter-btn active" data-hours="24">24h</button>
+                        <button class="filter-btn" data-hours="48">48h</button>
+                        <button class="filter-btn" data-hours="168">7d</button>
+                    </div>
+                </div>
+                
+                <div class="dashboard">
+                    <!-- Temperature Chart -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Temperatura (°C) - Histórico</div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="temperature-chart"></canvas>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value" id="temp-min-result">0°C</div>
+                                <div class="stat-label">Mínima (24h)</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="temp-max-result">0°C</div>
+                                <div class="stat-label">Máxima (24h)</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="temp-avg-result">0°C</div>
+                                <div class="stat-label">Média (24h)</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="temp-current-result">0°C</div>
+                                <div class="stat-label">Atual</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Humidity Chart -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Umidade (%) - Histórico</div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="humidity-chart"></canvas>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value" id="hum-min-result">0%</div>
+                                <div class="stat-label">Mínima (24h)</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="hum-max-result">0%</div>
+                                <div class="stat-label">Máxima (24h)</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="hum-avg-result">0%</div>
+                                <div class="stat-label">Média (24h)</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="hum-current-result">0%</div>
+                                <div class="stat-label">Atual</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Other Pages (Placeholder) -->
+            <div class="page" id="reports-page">
+                <div class="header">
+                    <h1>Relatórios</h1>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Relatórios do Sistema</div>
+                    </div>
+                    <div style="padding: 40px; text-align: center; color: var(--gray-dark);">
+                        <i class="fas fa-file-alt" style="font-size: 3rem; margin-bottom: 20px;"></i>
+                        <p>Página de relatórios em desenvolvimento</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="page" id="settings-page">
+                <div class="header">
+                    <h1>Configurações</h1>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Configurações do Sistema</div>
+                    </div>
+                    <div style="padding: 40px; text-align: center; color: var(--gray-dark);">
+                        <i class="fas fa-cogs" style="font-size: 3rem; margin-bottom: 20px;"></i>
+                        <p>Página de configurações em desenvolvimento</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer">
+                Projeto Arduino • <span id="current-year"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set current year
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        
+        // Page Navigation
+        document.querySelectorAll('.menu li').forEach(item => {
+            item.addEventListener('click', function() {
+                const pageId = this.dataset.page + '-page';
+                
+                // Update menu active state
+                document.querySelectorAll('.menu li').forEach(li => li.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show selected page
+                document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                document.getElementById(pageId).classList.add('active');
+                
+                // Initialize charts if results page is selected
+                if (pageId === 'results-page' && !window.resultsInitialized) {
+                    initializeResultsCharts();
+                    window.resultsInitialized = true;
+                }
+            });
+        });
+
+        // DASHBOARD CODE
+        const tempGaugeCtx = document.getElementById('temp-gauge').getContext('2d');
+        const humGaugeCtx = document.getElementById('hum-gauge').getContext('2d');
+        
+        function createGauge(ctx, value, maxValue, label, isWarning = false) {
+            const backgroundColor = isWarning ? 
+                '#f39c12' : 
+                getGaugeColor(value, maxValue);
+            
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [value, maxValue - value],
+                        backgroundColor: [
+                            backgroundColor,
+                            '#e9ecef'
+                        ],
+                        borderWidth: 0,
+                        circumference: 180,
+                        rotation: 270
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        function getGaugeColor(value, maxValue) {
+            const percentage = value / maxValue;
+            if (percentage < 0.25) return '#2ecc71';
+            if (percentage < 0.5) return '#3498db';
+            if (percentage < 0.75) return '#f1c40f';
+            return '#e74c3c';
+        }
+        
+        // Criar gauges zerados
+        let tempGauge = createGauge(tempGaugeCtx, 0, 100, 'Temperatura');
+        let humGauge = createGauge(humGaugeCtx, 0, 100, 'Umidade');
+        
+        // Dashboard variables com valores zerados
+        const autoBtn = document.getElementById('auto-btn');
+        const manualBtn = document.getElementById('manual-btn');
+        const ventilationSwitch = document.getElementById('ventilation-switch');
+        const lampSwitch = document.getElementById('lamp-switch');
+        const modeStatus = document.getElementById('mode-status');
+        const ventilationIcon = document.getElementById('ventilation-icon');
+        const lampIcon = document.getElementById('lamp-icon');
+        const ventilationStatus = document.getElementById('ventilation-status');
+        const lampStatus = document.getElementById('lamp-status');
+        const operatorNotes = document.getElementById('operator-notes');
+        
+        const productNameInput = document.getElementById('product-name');
+        const tempMinInput = document.getElementById('temp-min');
+        const tempMaxInput = document.getElementById('temp-max');
+        const humMinInput = document.getElementById('hum-min');
+        const humMaxInput = document.getElementById('hum-max');
+        const saveProductBtn = document.getElementById('save-product-btn');
+        const productList = document.getElementById('product-list');
+        
+        let safeRanges = {
+            temp: { min: 15, max: 25 },
+            hum: { min: 11, max: 15 }
+        };
+        
+        let currentTemp = 0;
+        let currentHum = 0;
+        let autoVentilation = false;
+        let autoLamp = false;
+        let savedProducts = [];
+        let currentProduct = null;
+
+        // Dashboard functions
+        function updateIcons() {
+            const isVentilationActive = autoBtn.classList.contains('active') ? autoVentilation : ventilationSwitch.checked;
+            const isLampActive = autoBtn.classList.contains('active') ? autoLamp : lampSwitch.checked;
+            
+            if (isVentilationActive) {
+                ventilationIcon.classList.remove('inactive');
+                ventilationIcon.classList.add('active');
+                ventilationStatus.textContent = autoBtn.classList.contains('active') ? '(Automático)' : '(Manual)';
+            } else {
+                ventilationIcon.classList.remove('active');
+                ventilationIcon.classList.add('inactive');
+                ventilationStatus.textContent = '';
+            }
+            
+            if (isLampActive) {
+                lampIcon.classList.remove('inactive');
+                lampIcon.classList.add('active');
+                lampStatus.textContent = autoBtn.classList.contains('active') ? '(Automático)' : '(Manual)';
+            } else {
+                lampIcon.classList.remove('active');
+                lampIcon.classList.add('inactive');
+                lampStatus.textContent = '';
+            }
+            
+            ventilationSwitch.checked = isVentilationActive;
+            lampSwitch.checked = isLampActive;
+        }
+        
+        function switchToAutoMode() {
+            autoBtn.classList.add('active');
+            manualBtn.classList.remove('active');
+            ventilationSwitch.disabled = true;
+            lampSwitch.disabled = true;
+            modeStatus.textContent = 'Modo Automático Ativo - Sistema controlando automaticamente';
+            modeStatus.className = 'mode-status';
+            updateIcons();
+        }
+        
+        function switchToManualMode() {
+            manualBtn.classList.add('active');
+            autoBtn.classList.remove('active');
+            ventilationSwitch.disabled = false;
+            lampSwitch.disabled = false;
+            modeStatus.textContent = 'Modo Manual Ativo - Controles manuais habilitados';
+            modeStatus.className = 'mode-status manual';
+            autoVentilation = false;
+            autoLamp = false;
+            updateIcons();
+        }
+        
+        function saveProduct() {
+            const productName = productNameInput.value.trim();
+            const tempMin = parseFloat(tempMinInput.value);
+            const tempMax = parseFloat(tempMaxInput.value);
+            const humMin = parseFloat(humMinInput.value);
+            const humMax = parseFloat(humMaxInput.value);
+            
+            if (!productName) {
+                alert('Por favor, digite um nome para o produto');
+                return;
+            }
+            
+            if (tempMin >= tempMax) {
+                alert('A temperatura mínima deve ser menor que a máxima');
+                return;
+            }
+            
+            if (humMin >= humMax) {
+                alert('A umidade mínima deve ser menor que a máxima');
+                return;
+            }
+            
+            const product = {
+                id: Date.now(),
+                name: productName,
+                tempRange: { min: tempMin, max: tempMax },
+                humRange: { min: humMin, max: humMax },
+                createdAt: new Date().toISOString()
+            };
+            
+            const existingIndex = savedProducts.findIndex(p => p.name.toLowerCase() === productName.toLowerCase());
+            if (existingIndex !== -1) {
+                savedProducts[existingIndex] = product;
+            } else {
+                savedProducts.push(product);
+            }
+            
+            localStorage.setItem('silo-products', JSON.stringify(savedProducts));
+            renderProductList();
+            productNameInput.value = '';
+        }
+        
+        function removeProduct(productId, event) {
+            event.stopPropagation();
+            
+            if (confirm('Tem certeza que deseja remover este produto?')) {
+                savedProducts = savedProducts.filter(p => p.id !== productId);
+                localStorage.setItem('silo-products', JSON.stringify(savedProducts));
+                renderProductList();
+                
+                if (currentProduct && currentProduct.id === productId) {
+                    currentProduct = null;
+                    productNameInput.value = '';
+                    safeRanges = { temp: { min: 15, max: 25 }, hum: { min: 11, max: 15 } };
+                }
+            }
+        }
+        
+        function renderProductList() {
+            productList.innerHTML = '';
+            
+            savedProducts.forEach(product => {
+                const chip = document.createElement('div');
+                chip.className = 'product-chip';
+                chip.dataset.productId = product.id;
+                
+                const productName = document.createElement('span');
+                productName.textContent = product.name;
+                chip.appendChild(productName);
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-product';
+                removeBtn.innerHTML = '×';
+                removeBtn.title = 'Remover produto';
+                removeBtn.addEventListener('click', (e) => removeProduct(product.id, e));
+                chip.appendChild(removeBtn);
+                
+                if (currentProduct && currentProduct.id === product.id) {
+                    chip.classList.add('active');
+                }
+                
+                chip.addEventListener('click', () => loadProduct(product));
+                productList.appendChild(chip);
+            });
+        }
+        
+        function loadProduct(product) {
+            currentProduct = product;
+            safeRanges.temp = product.tempRange;
+            safeRanges.hum = product.humRange;
+            
+            productNameInput.value = product.name;
+            tempMinInput.value = product.tempRange.min;
+            tempMaxInput.value = product.tempRange.max;
+            humMinInput.value = product.humRange.min;
+            humMaxInput.value = product.humRange.max;
+            
+            renderProductList();
+            updateWarningStates(currentTemp, currentHum);
+        }
+        
+        function handleControlChange(event) {
+            updateIcons();
+        }
+        
+        function updateWarningStates(temp, hum) {
+            const tempValue = document.getElementById('temp-value');
+            const humValue = document.getElementById('hum-value');
+            const tempGaugeValue = document.getElementById('temp-gauge-value');
+            const humGaugeValue = document.getElementById('hum-gauge-value');
+            
+            const isTempWarning = temp < safeRanges.temp.min || temp > safeRanges.temp.max;
+            const isHumWarning = hum < safeRanges.hum.min || hum > safeRanges.hum.max;
+            
+            tempValue.classList.toggle('warning', isTempWarning);
+            humValue.classList.toggle('warning', isHumWarning);
+            tempGaugeValue.classList.toggle('warning', isTempWarning);
+            humGaugeValue.classList.toggle('warning', isHumWarning);
+            
+            tempGauge.data.datasets[0].backgroundColor[0] = isTempWarning ? '#f39c12' : getGaugeColor(temp, 100);
+            humGauge.data.datasets[0].backgroundColor[0] = isHumWarning ? '#f39c12' : getGaugeColor(hum, 100);
+            
+            tempGauge.update();
+            humGauge.update();
+        }
+        
+        function updateValues(temp, hum) {
+            const tempNum = parseFloat(temp);
+            const humNum = parseFloat(hum);
+            
+            document.getElementById('temp-value').textContent = `${temp}°C`;
+            document.getElementById('hum-value').textContent = `${hum}%`;
+            document.getElementById('temp-gauge-value').textContent = `${temp}°C`;
+            document.getElementById('hum-gauge-value').textContent = `${hum}%`;
+            
+            tempGauge.data.datasets[0].data = [tempNum, 100 - tempNum];
+            humGauge.data.datasets[0].data = [humNum, 100 - humNum];
+            
+            tempGauge.update();
+            humGauge.update();
+            
+            currentTemp = tempNum;
+            currentHum = humNum;
+            updateWarningStates(currentTemp, currentHum);
+        }
+        
+        function handleAutomaticControl() {
+            autoVentilation = false;
+            autoLamp = false;
+            
+            if (currentTemp > safeRanges.temp.max) {
+                autoVentilation = true;
+            } else if (currentTemp < safeRanges.temp.min) {
+                autoLamp = true;
+            }
+            
+            if (currentHum > safeRanges.hum.max) {
+                autoLamp = true;
+            } else if (currentHum < safeRanges.hum.min) {
+                autoVentilation = true;
+            }
+            
+            updateIcons();
+        }
+        
+        // Event listeners
+        saveProductBtn.addEventListener('click', saveProduct);
+        autoBtn.addEventListener('click', switchToAutoMode);
+        manualBtn.addEventListener('click', switchToManualMode);
+        ventilationSwitch.addEventListener('change', handleControlChange);
+        lampSwitch.addEventListener('change', handleControlChange);
+        
+        // Inicializar dashboard com valores zerados
+        updateValues(0, 0);
+        updateIcons();
+        renderProductList();
+        
+        // Load saved products from localStorage
+        const savedProductsData = localStorage.getItem('silo-products');
+        if (savedProductsData) {
+            savedProducts = JSON.parse(savedProductsData);
+            renderProductList();
+        }
+        
+        operatorNotes.addEventListener('input', function() {
+            localStorage.setItem('silo-operator-notes', this.innerHTML);
+        });
+        
+        // RESULTS PAGE CODE
+        let temperatureChart, humidityChart;
+        let currentData = [];
+        
+        function generateSampleData(hours = 24) {
+            const data = [];
+            const now = new Date();
+            
+            // Set start time to 00:00 of current day
+            const startTime = new Date(now);
+            startTime.setHours(0, 0, 0, 0);
+            
+            // Calculate number of 30-minute intervals
+            const intervals = hours * 2; // 2 intervals per hour
+            
+            for (let i = 0; i <= intervals; i++) {
+                const timestamp = new Date(startTime.getTime() + (i * 30 * 60 * 1000));
+                
+                // Generate realistic temperature data with daily pattern
+                const hourOfDay = timestamp.getHours() + (timestamp.getMinutes() / 60);
+                const dailyPattern = Math.sin((hourOfDay - 6) * Math.PI / 12) * 4; // Peak at 14:00
+                
+                const baseTemp = 20;
+                const currentTemp = baseTemp + dailyPattern + (Math.random() - 0.5) * 2;
+                
+                // Generate min/max for each 30-minute interval
+                const tempMin = currentTemp - (1 + Math.random() * 1.5);
+                const tempMax = currentTemp + (1 + Math.random() * 1.5);
+                
+                // Generate realistic humidity data with inverse daily pattern
+                const humDailyPattern = -Math.sin((hourOfDay - 6) * Math.PI / 12) * 2; // Lowest at 14:00
+                const baseHum = 13;
+                const currentHum = baseHum + humDailyPattern + (Math.random() - 0.5) * 1;
+                
+                // Generate min/max for each 30-minute interval
+                const humMin = Math.max(5, currentHum - (0.5 + Math.random() * 1));
+                const humMax = Math.min(30, currentHum + (0.5 + Math.random() * 1));
+                
+                data.push({
+                    timestamp: timestamp,
+                    temperature: {
+                        current: parseFloat(currentTemp.toFixed(1)),
+                        min: parseFloat(tempMin.toFixed(1)),
+                        max: parseFloat(tempMax.toFixed(1))
+                    },
+                    humidity: {
+                        current: parseFloat(currentHum.toFixed(1)),
+                        min: parseFloat(humMin.toFixed(1)),
+                        max: parseFloat(humMax.toFixed(1))
+                    }
+                });
+            }
+            
+            return data;
+        }
+        
+        function initializeResultsCharts() {
+            currentData = generateSampleData(24);
+            const tempCtx = document.getElementById('temperature-chart').getContext('2d');
+            const humCtx = document.getElementById('humidity-chart').getContext('2d');
+            
+            temperatureChart = new Chart(tempCtx, {
+                type: 'line',
+                data: {
+                    labels: currentData.map(d => d.timestamp.toLocaleTimeString('pt-BR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    })),
+                    datasets: [
+                        {
+                            label: 'Temperatura Atual',
+                            data: currentData.map(d => d.temperature.current),
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Mínima (30min)',
+                            data: currentData.map(d => d.temperature.min),
+                            borderColor: '#3498db',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Máxima (30min)',
+                            data: currentData.map(d => d.temperature.max),
+                            borderColor: '#f39c12',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Horário'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Temperatura (°C)'
+                            },
+                            min: 10,
+                            max: 30,
+                            ticks: {
+                                stepSize: 2
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
+            
+            humidityChart = new Chart(humCtx, {
+                type: 'line',
+                data: {
+                    labels: currentData.map(d => d.timestamp.toLocaleTimeString('pt-BR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    })),
+                    datasets: [
+                        {
+                            label: 'Umidade Atual',
+                            data: currentData.map(d => d.humidity.current),
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Mínima (30min)',
+                            data: currentData.map(d => d.humidity.min),
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Máxima (30min)',
+                            data: currentData.map(d => d.humidity.max),
+                            borderColor: '#e67e22',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Horário'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Umidade (%)'
+                            },
+                            min: 5,
+                            max: 25,
+                            ticks: {
+                                stepSize: 5
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
+            
+            updateResultsStatistics();
+        }
+        
+        function updateResultsStatistics() {
+            const temps = currentData.map(d => d.temperature.current);
+            const hums = currentData.map(d => d.humidity.current);
+            
+            // Calcular estatísticas de temperatura
+            const tempMin = Math.min(...temps).toFixed(1);
+            const tempMax = Math.max(...temps).toFixed(1);
+            const tempAvg = (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1);
+            const tempCurrent = currentData[currentData.length - 1].temperature.current.toFixed(1);
+            
+            // Calcular estatísticas de umidade
+            const humMin = Math.min(...hums).toFixed(1);
+            const humMax = Math.max(...hums).toFixed(1);
+            const humAvg = (hums.reduce((a, b) => a + b, 0) / hums.length).toFixed(1);
+            const humCurrent = currentData[currentData.length - 1].humidity.current.toFixed(1);
+            
+            // Atualizar estatísticas de temperatura
+            document.getElementById('temp-min-result').textContent = `${tempMin}°C`;
+            document.getElementById('temp-max-result').textContent = `${tempMax}°C`;
+            document.getElementById('temp-avg-result').textContent = `${tempAvg}°C`;
+            document.getElementById('temp-current-result').textContent = `${tempCurrent}°C`;
+            
+            // Atualizar estatísticas de umidade
+            document.getElementById('hum-min-result').textContent = `${humMin}%`;
+            document.getElementById('hum-max-result').textContent = `${humMax}%`;
+            document.getElementById('hum-avg-result').textContent = `${humAvg}%`;
+            document.getElementById('hum-current-result').textContent = `${humCurrent}%`;
+        }
+        
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const hours = parseInt(this.dataset.hours);
+                currentData = generateSampleData(hours);
+                
+                updateResultsCharts();
+                updateResultsStatistics();
+            });
+        });
+        
+        function updateResultsCharts() {
+            const labels = currentData.map(d => d.timestamp.toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            }));
+            
+            temperatureChart.data.labels = labels;
+            temperatureChart.data.datasets[0].data = currentData.map(d => d.temperature.current);
+            temperatureChart.data.datasets[1].data = currentData.map(d => d.temperature.min);
+            temperatureChart.data.datasets[2].data = currentData.map(d => d.temperature.max);
+            temperatureChart.update();
+            
+            humidityChart.data.labels = labels;
+            humidityChart.data.datasets[0].data = currentData.map(d => d.humidity.current);
+            humidityChart.data.datasets[1].data = currentData.map(d => d.humidity.min);
+            humidityChart.data.datasets[2].data = currentData.map(d => d.humidity.max);
+            humidityChart.update();
+            
+            // Atualizar estatísticas também
+            updateResultsStatistics();
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            // Load saved notes
+            const savedNotes = localStorage.getItem('silo-operator-notes');
+            if (savedNotes) {
+                operatorNotes.innerHTML = savedNotes;
+            }
+            
+            // Initialize results charts if on results page
+            if (document.getElementById('results-page').classList.contains('active')) {
+                initializeResultsCharts();
+                window.resultsInitialized = true;
+            }
+        });
+    </script>
+</body>
+</html>
